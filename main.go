@@ -44,18 +44,18 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// Health
-	mux.HandleFunc("/healthz", healthHandler)
-
 	// File server
 	handlerFileServer := http.StripPrefix("/app/", http.FileServer(http.Dir(".")))
 	mux.Handle("/app/", middlewareLog(config.middlewareMetricsInc(handlerFileServer)))
 
+	// Health
+	mux.HandleFunc("GET /api/healthz", healthHandler)
+
 	// Metrics
-	mux.HandleFunc("/metrics", config.handlerMetrics)
+	mux.HandleFunc("GET /api/metrics", config.handlerMetrics)
 
 	// Reset
-	mux.HandleFunc("/reset", config.handlerReset)
+	mux.HandleFunc("POST /api/reset", config.handlerReset)
 
 	server := http.Server{
 		Addr:    ":" + port,
