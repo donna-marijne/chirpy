@@ -21,10 +21,18 @@ func (c *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 }
 
 func (c *apiConfig) handlerMetrics(writer http.ResponseWriter, req *http.Request) {
-	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	writer.WriteHeader(200)
 
-	body := fmt.Sprintf("Hits: %d", c.fileserverHits.Load())
+	body := fmt.Sprintf(
+		`<html>
+	<body>
+		<h1>Welcome, Chirpy Admin</h1>
+		<p>Chirpy has been visited %d times!</p>
+	</body>
+</html>`,
+		c.fileserverHits.Load(),
+	)
 	writer.Write([]byte(body))
 }
 
@@ -48,14 +56,17 @@ func main() {
 	handlerFileServer := http.StripPrefix("/app/", http.FileServer(http.Dir(".")))
 	mux.Handle("/app/", middlewareLog(config.middlewareMetricsInc(handlerFileServer)))
 
-	// Health
-	mux.HandleFunc("GET /api/healthz", healthHandler)
-
 	// Metrics
-	mux.HandleFunc("GET /api/metrics", config.handlerMetrics)
+	mux.HandleFunc("GET /admin/metrics", config.handlerMetrics)
 
 	// Reset
-	mux.HandleFunc("POST /api/reset", config.handlerReset)
+	mux.HandleFunc("POST /admin/reset", config.handlerReset)
+
+	// Health
+	mux.HandleFunc("GET /api/healthz", handlerHealth)
+
+	// Validate chirp
+	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
 
 	server := http.Server{
 		Addr:    ":" + port,
