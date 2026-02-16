@@ -11,7 +11,7 @@ type ValidateChirpRequest struct {
 }
 
 type ValidateChirpResponse struct {
-	Valid bool `json:"valid"`
+	CleanedBody string `json:"cleaned_body"`
 }
 
 type ValidateChirpErrorResponse struct {
@@ -33,8 +33,10 @@ func handlerValidateChirp(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	cleanedBody := removeProfanity(chirp.Body)
+
 	res := ValidateChirpResponse{
-		Valid: true,
+		CleanedBody: cleanedBody,
 	}
 	sendResponse(writer, res, 200)
 }
