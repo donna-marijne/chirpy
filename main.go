@@ -7,17 +7,22 @@ import (
 	"os"
 
 	"github.com/donnamarijne/chirpy/internal/database"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 func main() {
 	port := "8080"
 
+	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
+	platform := os.Getenv("PLATFORM")
+
 	db, err := sql.Open("postgres", dbURL)
 
 	config := apiConfig{
 		dbQueries: database.New(db),
+		platform:  platform,
 	}
 
 	mux := http.NewServeMux()
@@ -34,6 +39,9 @@ func main() {
 
 	// Health
 	mux.HandleFunc("GET /api/healthz", handlerHealth)
+
+	// Users
+	mux.HandleFunc("POST /api/users", config.handlerUserCreate)
 
 	// Validate chirp
 	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
