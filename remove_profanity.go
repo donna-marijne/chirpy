@@ -13,7 +13,7 @@ func removeProfanity(msg string) string {
 	cleanedWords := make([]string, len(msgWords))
 
 	for i, word := range msgWords {
-		if profanity[strings.ToLower(word)] {
+		if _, ok := profanity[strings.ToLower(word)]; ok {
 			word = "****"
 		}
 
