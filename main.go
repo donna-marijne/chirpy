@@ -37,6 +37,9 @@ func main() {
 	// Reset
 	mux.HandleFunc("POST /admin/reset", config.handlerReset)
 
+	// Chirps
+	mux.HandleFunc("POST /api/chirps", config.handlerChirpCreate)
+
 	// Health
 	mux.HandleFunc("GET /api/healthz", handlerHealth)
 
@@ -44,7 +47,7 @@ func main() {
 	mux.HandleFunc("POST /api/users", config.handlerUserCreate)
 
 	// Validate chirp
-	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
+	// mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
 
 	server := http.Server{
 		Addr:    ":" + port,
