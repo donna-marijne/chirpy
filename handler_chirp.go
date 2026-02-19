@@ -15,7 +15,7 @@ type ChirpCreateRequest struct {
 	UserID uuid.UUID `json:"user_id"`
 }
 
-type ChirpCreateResponse struct {
+type ChirpResponse struct {
 	ID        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -50,7 +50,7 @@ func (c *apiConfig) handlerChirpCreate(writer http.ResponseWriter, req *http.Req
 		return
 	}
 
-	res := ChirpCreateResponse{
+	res := ChirpResponse{
 		ID:        chirp.ID,
 		CreatedAt: chirp.CreatedAt,
 		UpdatedAt: chirp.UpdatedAt,
@@ -58,4 +58,26 @@ func (c *apiConfig) handlerChirpCreate(writer http.ResponseWriter, req *http.Req
 		UserID:    chirp.UserID,
 	}
 	sendResponse(writer, res, http.StatusCreated)
+}
+
+func (c *apiConfig) handlerChirpGet(writer http.ResponseWriter, req *http.Request) {
+	chirps, err := c.dbQueries.GetChirps(req.Context())
+	if err != nil {
+		log.Printf("Error from CreateChirp: %v", err)
+		sendErrorResponse(writer, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	res := make([]ChirpResponse, len(chirps))
+	for i, chirp := range chirps {
+		res[i] = ChirpResponse{
+			ID:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserID:    chirp.UserID,
+		}
+	}
+
+	sendResponse(writer, res, http.StatusOK)
 }

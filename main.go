@@ -39,15 +39,13 @@ func main() {
 
 	// Chirps
 	mux.HandleFunc("POST /api/chirps", config.handlerChirpCreate)
+	mux.HandleFunc("GET /api/chirps", config.handlerChirpGet)
 
 	// Health
 	mux.HandleFunc("GET /api/healthz", handlerHealth)
 
 	// Users
 	mux.HandleFunc("POST /api/users", config.handlerUserCreate)
-
-	// Validate chirp
-	// mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
 
 	server := http.Server{
 		Addr:    ":" + port,
