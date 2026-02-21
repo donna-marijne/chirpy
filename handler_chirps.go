@@ -23,7 +23,7 @@ type ChirpResponse struct {
 	UserID    uuid.UUID `json:"user_id"`
 }
 
-func (c *apiConfig) handlerChirpCreate(writer http.ResponseWriter, req *http.Request) {
+func (c *apiConfig) handlerChirpsCreate(writer http.ResponseWriter, req *http.Request) {
 	chirpCreate := ChirpCreateRequest{}
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&chirpCreate)
@@ -60,7 +60,7 @@ func (c *apiConfig) handlerChirpCreate(writer http.ResponseWriter, req *http.Req
 	sendResponse(writer, res, http.StatusCreated)
 }
 
-func (c *apiConfig) handlerChirpGet(writer http.ResponseWriter, req *http.Request) {
+func (c *apiConfig) handlerChirpsGet(writer http.ResponseWriter, req *http.Request) {
 	chirps, err := c.dbQueries.GetChirps(req.Context())
 	if err != nil {
 		log.Printf("Error from CreateChirp: %v", err)
@@ -77,6 +77,31 @@ func (c *apiConfig) handlerChirpGet(writer http.ResponseWriter, req *http.Reques
 			Body:      chirp.Body,
 			UserID:    chirp.UserID,
 		}
+	}
+
+	sendResponse(writer, res, http.StatusOK)
+}
+
+func (c *apiConfig) handlerChirpsGetOne(writer http.ResponseWriter, req *http.Request) {
+	chirpIDStr := req.PathValue("chirpID")
+	chirpID, err := uuid.Parse(chirpIDStr)
+	if err != nil {
+		sendErrorResponse(writer, "Invalid chirpID format", http.StatusBadRequest)
+		return
+	}
+
+	chirp, err := c.dbQueries.GetChirp(req.Context(), chirpID)
+	if err != nil {
+		sendErrorResponse(writer, "Chirp not found", http.StatusNotFound)
+		return
+	}
+
+	res := ChirpResponse{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
 	}
 
 	sendResponse(writer, res, http.StatusOK)

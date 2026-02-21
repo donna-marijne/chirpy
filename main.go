@@ -38,8 +38,9 @@ func main() {
 	mux.HandleFunc("POST /admin/reset", config.handlerReset)
 
 	// Chirps
-	mux.HandleFunc("POST /api/chirps", config.handlerChirpCreate)
-	mux.HandleFunc("GET /api/chirps", config.handlerChirpGet)
+	mux.HandleFunc("POST /api/chirps", config.handlerChirpsCreate)
+	mux.HandleFunc("GET /api/chirps", config.handlerChirpsGet)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", config.handlerChirpsGetOne)
 
 	// Health
 	mux.HandleFunc("GET /api/healthz", handlerHealth)
