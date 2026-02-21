@@ -6,14 +6,17 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/donnamarijne/chirpy/internal/auth"
+	"github.com/donnamarijne/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
 type UserCreateRequest struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
-type UserCreateResponse struct {
+type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -22,7 +25,6 @@ type UserCreateResponse struct {
 
 func (c *apiConfig) handlerUserCreate(writer http.ResponseWriter, req *http.Request) {
 	body := UserCreateRequest{}
-	// err := unmarshalRequestBody(req, &body)
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&body)
 	if err != nil {
@@ -31,23 +33,29 @@ func (c *apiConfig) handlerUserCreate(writer http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	user, err := c.dbQueries.CreateUser(req.Context(), body.Email)
+	hashedPassword, err := auth.HashPassword(body.Password)
+	if err != nil {
+		log.Printf("Error hashing password: %v", err)
+		sendErrorResponse(writer, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	createParams := database.CreateUserParams{
+		Email:          body.Email,
+		HashedPassword: hashedPassword,
+	}
+	user, err := c.dbQueries.CreateUser(req.Context(), createParams)
 	if err != nil {
 		log.Printf("Error from CreateUser: %v", err)
 		sendErrorResponse(writer, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
 
-	res := UserCreateResponse{
+	res := UserResponse{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
 	}
 	sendResponse(writer, res, http.StatusCreated)
-}
-
-func unmarshalRequestBody(req *http.Request, obj *any) error {
-	decoder := json.NewDecoder(req.Body)
-	return decoder.Decode(obj)
 }

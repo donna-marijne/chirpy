@@ -45,6 +45,9 @@ func main() {
 	// Health
 	mux.HandleFunc("GET /api/healthz", handlerHealth)
 
+	// Login
+	mux.HandleFunc("POST /api/login", config.handlerLogin)
+
 	// Users
 	mux.HandleFunc("POST /api/users", config.handlerUserCreate)
 
