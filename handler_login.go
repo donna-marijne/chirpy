@@ -6,18 +6,33 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/donnamarijne/chirpy/internal/auth"
 	"github.com/donnamarijne/chirpy/internal/database"
+	"github.com/google/uuid"
 )
 
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	ExpiresInSeconds int64  `json:"expires_in_seconds"`
 }
 
+type LoginResponse struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+	Token     string    `json:"token"`
+}
+
+const DefaultExpiresInSeconds = 60 * 60
+
 func (c *apiConfig) handlerLogin(writer http.ResponseWriter, req *http.Request) {
-	body := LoginRequest{}
+	body := LoginRequest{
+		ExpiresInSeconds: DefaultExpiresInSeconds,
+	}
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&body)
 	if err != nil {
@@ -26,17 +41,33 @@ func (c *apiConfig) handlerLogin(writer http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	if body.ExpiresInSeconds > DefaultExpiresInSeconds {
+		body.ExpiresInSeconds = DefaultExpiresInSeconds
+	}
+
 	user, err := login(req.Context(), c.dbQueries, body.Email, body.Password)
 	if err != nil {
 		sendErrorResponse(writer, "Incorrect email or password", http.StatusUnauthorized)
 		return
 	}
 
-	res := UserResponse{
+	token, err := auth.MakeJWT(
+		user.ID,
+		c.secret,
+		time.Duration(body.ExpiresInSeconds)*time.Second,
+	)
+	if err != nil {
+		log.Printf("Error making a JWT: %v", err)
+		sendErrorResponse(writer, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	res := LoginResponse{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
+		Token:     token,
 	}
 	sendResponse(writer, res, http.StatusOK)
 }

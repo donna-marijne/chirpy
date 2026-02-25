@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/donnamarijne/chirpy/internal/auth"
 	"github.com/donnamarijne/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
 type ChirpCreateRequest struct {
-	Body   string    `json:"body"`
-	UserID uuid.UUID `json:"user_id"`
+	Body string `json:"body"`
 }
 
 type ChirpResponse struct {
@@ -24,9 +24,21 @@ type ChirpResponse struct {
 }
 
 func (c *apiConfig) handlerChirpsCreate(writer http.ResponseWriter, req *http.Request) {
+	token, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		sendErrorResponse(writer, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, c.secret)
+	if err != nil {
+		sendErrorResponse(writer, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	chirpCreate := ChirpCreateRequest{}
 	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&chirpCreate)
+	err = decoder.Decode(&chirpCreate)
 	if err != nil {
 		log.Printf("Error decoding request body: %v", err)
 		sendErrorResponse(writer, "Something went wrong", http.StatusBadRequest)
@@ -40,10 +52,13 @@ func (c *apiConfig) handlerChirpsCreate(writer http.ResponseWriter, req *http.Re
 
 	cleanedBody := removeProfanity(chirpCreate.Body)
 
-	chirp, err := c.dbQueries.CreateChirp(req.Context(), database.CreateChirpParams{
-		Body:   cleanedBody,
-		UserID: chirpCreate.UserID,
-	})
+	chirp, err := c.dbQueries.CreateChirp(
+		req.Context(),
+		database.CreateChirpParams{
+			Body:   cleanedBody,
+			UserID: userID,
+		},
+	)
 	if err != nil {
 		log.Printf("Error from CreateChirp: %v", err)
 		sendErrorResponse(writer, "Something went wrong", http.StatusInternalServerError)
