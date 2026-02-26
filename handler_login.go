@@ -14,35 +14,27 @@ import (
 )
 
 type LoginRequest struct {
-	Email            string `json:"email"`
-	Password         string `json:"password"`
-	ExpiresInSeconds int64  `json:"expires_in_seconds"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type LoginResponse struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-	Token     string    `json:"token"`
+	ID           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Email        string    `json:"email"`
+	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
 }
 
-const DefaultExpiresInSeconds = 60 * 60
-
 func (c *apiConfig) handlerLogin(writer http.ResponseWriter, req *http.Request) {
-	body := LoginRequest{
-		ExpiresInSeconds: DefaultExpiresInSeconds,
-	}
+	body := LoginRequest{}
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&body)
 	if err != nil {
 		log.Printf("Error decoding request body: %v", err)
 		sendErrorResponse(writer, "Malformed request body", http.StatusBadRequest)
 		return
-	}
-
-	if body.ExpiresInSeconds > DefaultExpiresInSeconds {
-		body.ExpiresInSeconds = DefaultExpiresInSeconds
 	}
 
 	user, err := login(req.Context(), c.dbQueries, body.Email, body.Password)
@@ -54,7 +46,7 @@ func (c *apiConfig) handlerLogin(writer http.ResponseWriter, req *http.Request) 
 	token, err := auth.MakeJWT(
 		user.ID,
 		c.secret,
-		time.Duration(body.ExpiresInSeconds)*time.Second,
+		time.Hour,
 	)
 	if err != nil {
 		log.Printf("Error making a JWT: %v", err)
@@ -62,12 +54,25 @@ func (c *apiConfig) handlerLogin(writer http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	createRefreshTokenParams := database.CreateRefreshTokenParams{
+		Token:     auth.MakeRefreshToken(),
+		UserID:    user.ID,
+		ExpiresAt: time.Now().Add(60 * 24 * time.Hour),
+	}
+	refreshToken, err := c.dbQueries.CreateRefreshToken(req.Context(), createRefreshTokenParams)
+	if err != nil {
+		log.Printf("Error creating a refresh token: %v", err)
+		sendErrorResponse(writer, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
 	res := LoginResponse{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
-		Token:     token,
+		ID:           user.ID,
+		CreatedAt:    user.CreatedAt,
+		UpdatedAt:    user.UpdatedAt,
+		Email:        user.Email,
+		Token:        token,
+		RefreshToken: refreshToken.Token,
 	}
 	sendResponse(writer, res, http.StatusOK)
 }

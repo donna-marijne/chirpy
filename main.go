@@ -50,6 +50,12 @@ func main() {
 	// Login
 	mux.HandleFunc("POST /api/login", config.handlerLogin)
 
+	// Refresh
+	mux.HandleFunc("POST /api/refresh", config.handlerRefresh)
+
+	// Revoke
+	mux.HandleFunc("POST /api/revoke", config.handlerRevoke)
+
 	// Users
 	mux.HandleFunc("POST /api/users", config.handlerUserCreate)
 
