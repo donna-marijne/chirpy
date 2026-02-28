@@ -14,5 +14,14 @@ select id, created_at, updated_at, email, hashed_password
 from users
 where email = $1;
 
+-- name: UpdateUser :one
+update users
+set
+	updated_at = now(),
+	email = $2,
+	hashed_password = $3
+where id = $1
+returning *;
+
 -- name: DeleteUsers :exec
 delete from users;

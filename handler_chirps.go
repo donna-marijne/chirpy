@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/donnamarijne/chirpy/internal/auth"
 	"github.com/donnamarijne/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -24,14 +23,9 @@ type ChirpResponse struct {
 }
 
 func (c *apiConfig) handlerChirpsCreate(writer http.ResponseWriter, req *http.Request) {
-	token, err := auth.GetBearerToken(req.Header)
+	userID, err := c.getAuthenticatedUserID(req)
 	if err != nil {
-		sendErrorResponse(writer, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	userID, err := auth.ValidateJWT(token, c.secret)
-	if err != nil {
+		log.Printf("Authorization failed: %v", err)
 		sendErrorResponse(writer, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -120,4 +114,34 @@ func (c *apiConfig) handlerChirpsGetOne(writer http.ResponseWriter, req *http.Re
 	}
 
 	sendResponse(writer, res, http.StatusOK)
+}
+
+func (c *apiConfig) handlerChirpsDelete(writer http.ResponseWriter, req *http.Request) {
+	userID := req.Context().Value("UserID").(uuid.UUID)
+	chirpIDStr := req.PathValue("chirpID")
+	chirpID, err := uuid.Parse(chirpIDStr)
+	if err != nil {
+		sendErrorResponse(writer, "Invalid chirpID format", http.StatusBadRequest)
+		return
+	}
+
+	chirp, err := c.dbQueries.GetChirp(req.Context(), chirpID)
+	if err != nil {
+		sendErrorResponse(writer, "Chirp not found", http.StatusNotFound)
+		return
+	}
+
+	if chirp.UserID != userID {
+		sendErrorResponse(writer, "Unauthorized", http.StatusForbidden)
+		return
+	}
+
+	err = c.dbQueries.DeleteChirp(req.Context(), chirpID)
+	if err != nil {
+		log.Printf("Error from DeleteChirp: %v", err)
+		sendErrorResponse(writer, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	writer.WriteHeader(http.StatusNoContent)
 }

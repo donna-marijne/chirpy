@@ -31,7 +31,7 @@ func main() {
 
 	// File server
 	handlerFileServer := http.StripPrefix("/app/", http.FileServer(http.Dir(".")))
-	mux.Handle("/app/", middlewareLog(config.middlewareMetricsInc(handlerFileServer)))
+	mux.Handle("/app/", config.middlewareMetricsInc(handlerFileServer))
 
 	// Metrics
 	mux.HandleFunc("GET /admin/metrics", config.handlerMetrics)
@@ -43,6 +43,10 @@ func main() {
 	mux.HandleFunc("POST /api/chirps", config.handlerChirpsCreate)
 	mux.HandleFunc("GET /api/chirps", config.handlerChirpsGet)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", config.handlerChirpsGetOne)
+	mux.Handle(
+		"DELETE /api/chirps/{chirpID}",
+		config.middlewareAuthenticate(config.handlerChirpsDelete),
+	)
 
 	// Health
 	mux.HandleFunc("GET /api/healthz", handlerHealth)
@@ -58,10 +62,11 @@ func main() {
 
 	// Users
 	mux.HandleFunc("POST /api/users", config.handlerUserCreate)
+	mux.HandleFunc("PUT /api/users", config.handlerUserUpdate)
 
 	server := http.Server{
 		Addr:    ":" + port,
-		Handler: mux,
+		Handler: middlewareLog(mux),
 	}
 
 	log.Printf("Starting Chirpy on port %s...", port)
