@@ -64,6 +64,9 @@ func main() {
 	mux.HandleFunc("POST /api/users", config.handlerUserCreate)
 	mux.HandleFunc("PUT /api/users", config.handlerUserUpdate)
 
+	// Webhooks
+	mux.HandleFunc("POST /api/polka/webhooks", config.handlerPolkaWebhooks)
+
 	server := http.Server{
 		Addr:    ":" + port,
 		Handler: middlewareLog(mux),

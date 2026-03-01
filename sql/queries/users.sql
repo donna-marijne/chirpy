@@ -10,7 +10,7 @@ values (
 returning *;
 
 -- name: GetUserByEmail :one
-select id, created_at, updated_at, email, hashed_password
+select *
 from users
 where email = $1;
 
@@ -20,6 +20,14 @@ set
 	updated_at = now(),
 	email = $2,
 	hashed_password = $3
+where id = $1
+returning *;
+
+-- name: UpdateUserSetChirpyRed :one
+update users
+set
+	updated_at = now(),
+	is_chirpy_red = $2
 where id = $1
 returning *;
 

@@ -22,10 +22,11 @@ type UserUpdateRequest struct {
 }
 
 type UserResponse struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
+	ID          uuid.UUID `json:"id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Email       string    `json:"email"`
+	IsChirpyRed bool      `json:"is_chirpy_red"`
 }
 
 func (c *apiConfig) handlerUserCreate(writer http.ResponseWriter, req *http.Request) {
@@ -57,10 +58,11 @@ func (c *apiConfig) handlerUserCreate(writer http.ResponseWriter, req *http.Requ
 	}
 
 	res := UserResponse{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+		Email:       user.Email,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 	sendResponse(writer, res, http.StatusCreated)
 }
@@ -102,10 +104,11 @@ func (c *apiConfig) handlerUserUpdate(writer http.ResponseWriter, req *http.Requ
 	}
 
 	res := UserResponse{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+		Email:       user.Email,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 	sendResponse(writer, res, http.StatusOK)
 }
