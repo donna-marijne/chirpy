@@ -15,16 +15,15 @@ func main() {
 	port := "8080"
 
 	godotenv.Load()
-	dbURL := os.Getenv("DB_URL")
-	platform := os.Getenv("PLATFORM")
-	secret := os.Getenv("SECRET")
 
+	dbURL := os.Getenv("DB_URL")
 	db, err := sql.Open("postgres", dbURL)
 
 	config := apiConfig{
 		dbQueries: database.New(db),
-		platform:  platform,
-		secret:    secret,
+		platform:  os.Getenv("PLATFORM"),
+		polkaKey:  os.Getenv("POLKA_KEY"),
+		secret:    os.Getenv("SECRET"),
 	}
 
 	mux := http.NewServeMux()
