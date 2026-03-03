@@ -70,7 +70,22 @@ func (c *apiConfig) handlerChirpsCreate(writer http.ResponseWriter, req *http.Re
 }
 
 func (c *apiConfig) handlerChirpsGet(writer http.ResponseWriter, req *http.Request) {
-	chirps, err := c.dbQueries.GetChirps(req.Context())
+	authorIDStr := req.URL.Query().Get("author_id")
+
+	getChirps := func() ([]database.Chirp, error) {
+		if authorIDStr == "" {
+			return c.dbQueries.GetChirps(req.Context())
+		}
+
+		userID, err := uuid.Parse(authorIDStr)
+		if err != nil {
+			return []database.Chirp{}, err
+		}
+
+		return c.dbQueries.GetChirpsByUserID(req.Context(), userID)
+	}
+
+	chirps, err := getChirps()
 	if err != nil {
 		log.Printf("Error from CreateChirp: %v", err)
 		sendErrorResponse(writer, "Something went wrong", http.StatusInternalServerError)
