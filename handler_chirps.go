@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/donnamarijne/chirpy/internal/database"
@@ -91,6 +92,18 @@ func (c *apiConfig) handlerChirpsGet(writer http.ResponseWriter, req *http.Reque
 		sendErrorResponse(writer, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
+
+	sortDesc := req.URL.Query().Get("sort") == "desc"
+	sortFunc := func(a, b database.Chirp) int {
+		return a.CreatedAt.Compare(b.CreatedAt)
+	}
+	if sortDesc {
+		sortFunc = func(a, b database.Chirp) int {
+			return b.CreatedAt.Compare(a.CreatedAt)
+		}
+	}
+
+	slices.SortFunc(chirps, sortFunc)
 
 	res := make([]ChirpResponse, len(chirps))
 	for i, chirp := range chirps {
